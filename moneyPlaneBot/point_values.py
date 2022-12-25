@@ -1,0 +1,3 @@
+RUMBLE = 1 
+COSIGN = 1 
+OWN = 2
