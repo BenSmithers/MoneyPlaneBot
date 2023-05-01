@@ -86,14 +86,14 @@ async def on_message(message:discord.Message):
         for user_id in scores.keys():
             user = await client.fetch_user(user_id)
 
-            out_str += "{} : {}\n".format(user.display_name, scores[user_id])
+            out_str += "{} : {} Moneybucks \n".format(user.display_name, 100+scores[user_id])
         
         await message.channel.send(out_str)
             
     elif received.startswith("$getstatus"):
         id_str = " ".join(received.split(" ")[1:])
         try:
-            money_id = str(int(id_str))
+            money_id = int(id_str)
         except ValueError:
             await message.channel.send("Failed to parse id '{}' as int".format(id_str))
             return
@@ -205,8 +205,8 @@ async def on_raw_reaction_add(payload:discord.RawReactionActionEvent):
         do_send = True
         db.land_add(message.id, user_id)
         mp = db.get_moneyplane(message_id)
-        if mp.result == MoneyPlaneResult.landed:
-            do_send= False
+        #if mp.result == MoneyPlaneResult.landed:
+        #    do_send= False
 
         
 
@@ -222,6 +222,10 @@ async def on_raw_reaction_add(payload:discord.RawReactionActionEvent):
         db.witness_add(message.id, user_id)
         await witness_text(message.id)
     elif reaction in emojis.CRASH:
+
+        outtext =  "{} moneyplane crashed. There were no survivors".format(possessive)
+        await channel.send(outtext)
+        await channel.send("This didn't happen: {}".format(mp.details))
         db.crash_add(message_id, user_id)
     elif reaction in emojis.WITNESS:
         if message.author.id == user_id:
@@ -240,6 +244,12 @@ async def on_raw_reaction_add(payload:discord.RawReactionActionEvent):
 
         db.witness_add(message.id, user_id)
         db.rumble_add(message.id, user_id)
+        await witness_text(message.id)
+
+    elif reaction in emojis.LONG:
+        if message.author.id == user_id:
+            return
+        db.longshot_add(message.id, user_id)
         await witness_text(message.id)
     
 
@@ -268,5 +278,7 @@ async def on_raw_reaction_remove(payload:discord.RawReactionActionEvent):
             db.witness_remove(message_id, user.id)
         elif reaction in emojis.RUMBLE:
             db.rumble_remove(message_id, user.id)
+        elif reaction in emojis.LONG:
+            db.longshot_remove(message_id, user.id)
 
 client.run(token)

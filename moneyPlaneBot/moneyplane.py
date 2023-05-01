@@ -20,6 +20,8 @@ class MoneyPlane:
         self._crashes = []
         self._lands = []
 
+        self._longshots = []
+
         # who placed it 
         self._owner = owner_id
 
@@ -27,7 +29,8 @@ class MoneyPlane:
 
     @property
     def witnesses(self):
-        return self._witnesses
+        raw = list(set(self._witnesses + self._crashes + self._lands + self._rumbles + self._cosigners))
+        return raw
 
     @property
     def rumbles(self):
@@ -66,7 +69,7 @@ class MoneyPlane:
         if len(self._crashes)==0 and len(self._lands)==0:
             return MoneyPlaneResult.unknown
         else:
-            if len(self._witnesses)<2:
+            if len(self.witnesses)<2: # include cosigners/reviewers 
                 return MoneyPlaneResult.nowitnesses
             elif len(self._crashes) == len(self._lands):
                 return MoneyPlaneResult.confliced
@@ -125,6 +128,16 @@ class MoneyPlane:
         if user_id in self._rumbles:
             self._rumbles.pop(self._rumbles.index(user_id))
 
+    def add_longshot(self, user_id:int):
+        assert isinstance(user_id, int), "User id was not an integer"
+        if user_id not in self._longshots:
+            if user_id!=self._owner:
+                self._longshots.append(user_id)
+
+    def remove_longshot(self, user_id:int):
+        assert isinstance(user_id, int), "User id was not an integer"
+        if user_id in self._longshots:
+            self._longshots.pop(self._longshots.index(user_id))
 
     def get_effect(self)->'tuple[dict, MoneyPlaneResult]':
         """
@@ -138,11 +151,15 @@ class MoneyPlane:
                 Any rumblers get a point 
             """
 
-            point_dict = {user_id:point_values.RUMBLE for user_id in self._rumbles}
+            point_dict = {user_id:point_values.RUMBLE for user_id in self._rumbles} 
+            for user_id in self._cosigners:
+                point_dict[user_id] = -point_values.COSIGN
+            point_dict[self._owner] = -point_values.OWN
         elif result==MoneyPlaneResult.landed:
             point_dict = {user_id:point_values.COSIGN for user_id in self._cosigners}
-            if self._owner not in point_dict:
-                point_dict[self._owner] = point_values.OWN
+            for user_id in self._rumbles:
+                point_dict[user_id] = -point_values.RUMBLE
+            point_dict[self._owner] = point_values.OWN
             
         return point_dict, result
 

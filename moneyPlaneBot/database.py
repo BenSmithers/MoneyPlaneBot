@@ -33,7 +33,8 @@ class DataBase:
             _obj.close()
 
             for key in data.keys():
-                self._moneyplanes[key] = MoneyPlane.build_from_json(data[key])
+                
+                self._moneyplanes[int(key)] = MoneyPlane.build_from_json(data[key])
 
     def get_score_dict(self):
         out_dict = {}
@@ -55,7 +56,7 @@ class DataBase:
     def check_sync(self):
         now = time()
 
-        if int(abs(now - self._lastsync))>3600: # one hour
+        if int(abs(now - self._lastsync))>1: # one minute
             self.sync()
 
     def new_moneyplane(self, money_id:int, owner_id:int, bet=""):
@@ -74,7 +75,6 @@ class DataBase:
 
 
     def get_moneyplane(self, money_id:int)->MoneyPlane:
-
         if money_id in self._moneyplanes:
             return self._moneyplanes[money_id]
         else:
@@ -157,5 +157,19 @@ class DataBase:
         mp.remove_rumble(user_id) 
         self.check_sync()
 
-
+    def longshot_add(self, message_id:int, user_id:int):
+        mp = self.get_moneyplane(message_id)
+        if mp.id not in self._moneyplanes:
+            return 
+        
+        mp.add_longshot(user_id)
+        self.check_sync()
+        
+    def longshot_remove(self, message_id:int, user_id:int):
+        mp = self.get_moneyplane(message_id)
+        if mp.id not in self._moneyplanes:
+            return 
+        
+        mp.remove_longshot(user_id)
+        self.check_sync()
     
