@@ -23,6 +23,56 @@ _obj.close()
 
 token = config["token"]
 
+import numpy as np
+def parse_element(element:str):
+    if "kh" in element:
+        khsplit = element.split("kh")
+        if len(khsplit)!=2:
+            raise ValueError("couldn't split around `kh` {}".format(element))
+        n_keep = int(khsplit[1])
+        element = khsplit[0]
+    else:
+        n_keep = -1
+
+    if element[0]=="-":
+        sign = -1
+        element=element[1:]
+    else:
+        sign =1 
+    if "d" in element:
+        split = element.split("d")
+        if not len(split)==2:
+            raise ValueError("had trouble splitting around `d` {}".format(element))
+
+        n_dice = int(float(split[0]))
+        die = int(float(split[1]))
+        roll = np.random.randint(1, die+1, size=n_dice)
+        
+        roll = list(sorted(roll)[::-1])
+        print(roll)
+        if n_keep!=-1:
+            if n_keep<=len(roll):
+                print(roll[0:n_keep])
+                return sign*sum(roll[0:n_keep])
+
+        return sign*sum(roll)
+    else:
+        value = int(element)
+        return sign*value
+
+def parse_roll(line):
+    pre_parsed = line.split("+")
+    parsed = []
+    for element in pre_parsed:
+        sub_parse = element.split("-")
+        for i_s, entry in enumerate(sub_parse):
+            if i_s==0:
+                parsed.append(entry)
+            else:
+                parsed.append("-"+entry)
+    parsed = sum([parse_element(element) for element in parsed])
+    return parsed
+
 def list_format(*users):
     namelist = ""
     for i_n, name in enumerate(users):
@@ -58,11 +108,34 @@ async def on_message(message:discord.Message):
 
     received = message.content.lower()
 
+
+    if received.startswith("$roll"):
+        content = message.content
+        content = " ".join(content.split(" ")[1:])
+        print("calling with '{}'".format(content))
+        quips = ["I bet you think you're clever",
+                "Real funny",
+                "I take it that was a typo",
+                "Let me just break out my fractional dice",
+                "What are you, europoean?",
+                "You want me to roll... {}?".format(content),
+                "I don't do decimals",
+                ]
+        if ("." in content) and content[-1]!=".":
+            which = np.random.randint(0, len(quips))
+            await message.channel.send(quips[which])
+            await message.channel.send("Well I'll try, I guess")
+
+        rollval = parse_roll(content)
+        await message.channel.send("I rolled {}".format(rollval))
+
+
     if received.startswith("$moneyplane"):
         if received.startswith("$moneyplane-fix"):
             """
                 is used to fix moneyplanes 
             """
+            pass
         content = message.content
         # trim the $moneyplane at the beginning 
         content = " ".join(content.split(" ")[1:])
@@ -105,6 +178,15 @@ async def on_message(message:discord.Message):
         
         await send_mp_details(message.channel, money_id)
 
+    elif received.startswith("$unresolved"):
+        await message.channel.send("Unresolved moneyplanes...")
+        unresolved = db.get_unresolved()
+        for mp in unresolved.values():
+            if len(mp.witnesses)<2:
+                continue
+            other = await message.channel.fetch_message(mp.id)
+
+            await message.channel.send("This one", reference=other, mention_author=False)
 
     elif received.startswith("$help"):
 
@@ -115,6 +197,7 @@ async def on_message(message:discord.Message):
         full_text+="Add moneyplanes with the command `$moneyplane <your moneyplane>`\n"
         full_text+="Check the high scores with `$getscore`\n"
         full_text+="See a moneyplane's status with `$getstatus <money_id>`\n"
+        full_text+="List unresolved moneyplanes with `$unresolved`\n"
         emoji_str=""
         emoji_str+= " "+ " ".join(emojis.RAWCOSIGN)
         emoji_str+= " "+ " ".join(emojis.RAWLAND)

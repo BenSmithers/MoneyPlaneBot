@@ -28,6 +28,7 @@ class DataBase:
         self._database = os.path.join(DATABASE_DIR, "moneyplanes.json")
         
         if os.path.exists(self._database):
+            print("Loading Database")
             _obj = open(self._database, 'rt')
             data = json.load(_obj)
             _obj.close()
@@ -35,6 +36,13 @@ class DataBase:
             for key in data.keys():
                 
                 self._moneyplanes[int(key)] = MoneyPlane.build_from_json(data[key])
+
+    def get_unresolved(self):
+        unr = {}
+        for key in self._moneyplanes:
+            if self.get_moneyplane(key).result==MoneyPlaneResult.confliced or self.get_moneyplane(key).result==MoneyPlaneResult.unknown:
+                unr[key] = self.get_moneyplane(key)
+        return unr
 
     def get_score_dict(self):
         out_dict = {}

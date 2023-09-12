@@ -154,12 +154,12 @@ class MoneyPlane:
             point_dict = {user_id:point_values.RUMBLE for user_id in self._rumbles} 
             for user_id in self._cosigners:
                 point_dict[user_id] = -point_values.COSIGN
-            point_dict[self._owner] = -point_values.OWN
+            point_dict[self._owner] = -point_values.OWN 
         elif result==MoneyPlaneResult.landed:
             point_dict = {user_id:point_values.COSIGN for user_id in self._cosigners}
             for user_id in self._rumbles:
                 point_dict[user_id] = -point_values.RUMBLE
-            point_dict[self._owner] = point_values.OWN
+            point_dict[self._owner] = point_values.OWN + point_values.RUMBLE*len(self._rumbles)
             
         return point_dict, result
 

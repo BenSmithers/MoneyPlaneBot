@@ -13,7 +13,6 @@ def process(what):
     ret =  [ 
         int(entry.split(":")[-1][:-1]) for entry in what
     ]
-    print(ret)
     return ret
 
 
